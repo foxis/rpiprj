@@ -1,0 +1,41 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: bluetooth-agent
+# Required-Start: $remote_fs $syslog bluetooth pulseaudio player-agent
+# Required-Stop: $remote_fs $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Makes Bluetooth discoverable and connectable to 0000
+# Description: Start Bluetooth-Agent at boot time.
+### END INIT INFO
+# /etc/init.d/bluetooth-agent
+USER=root
+HOME=/root
+export USER HOME
+
+. /lib/lsb/init-functions
+
+
+case "$1" in
+start)
+echo "setting bluetooth discoverable"
+hciconfig hci0 up
+hciconfig hci0 class 0x20041C
+hciconfig hci0 piscan
+
+pactl set-sink-input-volume `pactl list sink-inputs short | grep protocol-native | awk '{print $1;}'` 100%
+amixer set Master 100%
+
+start-stop-daemon -S -x /home/pi/btctl &
+echo "bluetooth-agent startet pw: 0000"
+;;
+stop)
+echo "Stopping bluetooth-agent"
+start-stop-daemon -K -x /home/pi/btctl
+;;
+*)
+echo "Usage: /etc/init.d/bluetooth-agent {start|stop}"
+exit 1
+;;
+esac
+exit 0

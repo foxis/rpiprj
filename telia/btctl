@@ -1,0 +1,36 @@
+#!/usr/bin/expect -f
+
+set prompt "#"
+set address [lindex $argv 0]
+
+spawn bluetoothctl --agent=NoInputNoOutput
+expect -re $prompt
+send "discoverable on\r"
+sleep 1
+expect -re $prompt
+send "pairable on\r"
+sleep 1
+expect -re $prompt
+send "default-agent\r"
+sleep 5
+while {1>0} {
+	expect {
+         "PIN" {
+		send "0000\r"
+		sleep 2
+	 }
+	}
+	expect {
+         "(yes/no)" {
+		send "yes\r"
+		sleep 2
+		send "pairable on\r"
+		sleep 2
+		expect -re $prompt
+		send "discoverable on\r"
+		sleep 2
+		expect -re $prompt
+	 }
+	}
+}
+expect eof

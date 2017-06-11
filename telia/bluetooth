@@ -1,0 +1,94 @@
+#!/bin/bash
+# The original script: http://blog.mrverrall.co.uk/2013/01/raspberry-pi-a2dp-bluetooth-audio.html.
+
+# Find the right sink with `pactl list sources short`.
+PA_SINK="alsa_output.usb-C-Media_Electronics_Inc._USB_PnP_Sound_Device-00-Device.analog-stereo"
+BT_MAC=$(echo "$NAME" | sed 's/:/_/g' | sed 's/\"//g')
+BT_USER=pi
+
+BTSL_PIN=17
+
+
+
+function log {
+	echo "[$(date)]: $*" >> /var/log/a2dp-autoconnect
+}
+
+function checkSource {
+	# Get the current sources
+	#local _sources=$(sudo su - "$BT_USER" -c "pactl list sources short")
+	local _sources=$(pactl list sources short)
+
+	# Check if any sources are currently running and that our new device is valid.
+	if [[ "$_sources" =~ RUNIING ]]; then
+		log "Source is already RUNNING. Available sources:"
+		log "$_sources"
+		return
+	fi
+
+	if [[ ! "$_sources" =~ "$1" ]] ; then
+		log "Unrecognized source. Available sources:"
+		log "\n$_sources"
+		return
+	fi
+
+	log "Validated new source: $1."
+	echo "$1"
+}
+
+function setVolume {
+	log "Setting volume levels."
+
+	# Set our volume to max
+	pacmd set-sink-volume 0 65537
+	amixer set Master 100%
+	local _pb_id=$(pactl list sink-inputs short | grep module-loopback | awk '{print $1;}')
+	pactl set-sink-input-volume $_pb_id 100%
+}
+
+function setPlaybackVolume {
+	log "Setting volume of bg plaback"
+	if [ "$3" = "0" ]
+	then
+		echo "1" > /sys/class/gpio/gpio"$BTSL_PIN"/value
+	else
+		echo "0" > /sys/class/gpio/gpio"$BTSL_PIN"/value
+	fi
+
+	local _pb_id=$(pactl list sink-inputs short | grep protocol-native | awk '{print $1;}')
+
+	for volume in $(seq $1 $2 $3); do
+		pactl set-sink-input-volume $_pb_id $volume%
+		sleep .01
+	done
+}
+
+function connect {
+	log "Connecting $1."
+
+	# Connect source to sink
+	pactl load-module module-loopback source="$1" sink="$PA_SINK" rate=44100 adjust_time=0
+}
+
+log "Change for device $BT_MAC detected, running $ACTION."
+
+if [ "$ACTION" = "add" ]
+then
+	#echo "$BTSL_PIN" > /sys/class/gpio/export
+	#echo "out" > /sys/class/gpio/gpio"$BTSL_PIN"/direction
+	log "Adding for $BT_MAC with $BT_USER"
+	incoming=bluez_source."$BT_MAC"
+	if [ ! -z $(checkSource "$incoming") ] ; then
+		connect "$incoming"
+		setVolume
+		setPlaybackVolume 100 -3 0
+	fi
+fi
+
+if [ "$ACTION" = "remove" ]
+then
+	#echo "$BTSL_PIN" > /sys/class/gpio/export
+	#echo "out" > /sys/class/gpio/gpio"$BTSL_PIN"/direction
+	log "Removing $BT_MAC"
+	setPlaybackVolume 0 3 100
+fi
