@@ -1,0 +1,38 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: player-agent
+# Required-Start: $remote_fs $syslog bluetooth pulseaudio
+# Required-Stop: $remote_fs $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: plays mp3 files in a predestined folder
+# Description: Start Player-Agent at boot time.
+### END INIT INFO
+# /etc/init.d/player-agent
+USER=root
+HOME=/root
+export USER HOME
+
+. /lib/lsb/init-functions
+OPTS="--loop -o alsa /home/pi/audio/teo.mp3"
+
+case "$1" in
+start)
+
+echo ds1307 0x68 > /sys/class/i2c-adapter/i2c-1/new_device
+hwclock -s
+date
+
+sleep 5
+start-stop-daemon -S -x /home/pi/player &
+sleep 5
+;;
+stop)
+start-stop-daemon -K -x /home/pi/player
+;;
+*)
+echo "Usage: /etc/init.d/player-agent {start|stop}"
+exit 1
+;;
+esac
+exit 0

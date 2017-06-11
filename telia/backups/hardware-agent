@@ -1,0 +1,40 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: hardware-agent
+# Required-Start: $remote_fs $syslog bluetooth pulseaudio bluetooth-agent player-agent
+# Required-Stop: $remote_fs $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: displays played audio peak volume and queries inputs
+# Description: Start Hardware-Agent at boot time.
+### END INIT INFO
+# /etc/init.d/hardware-agent
+USER=root
+HOME=/root
+export USER HOME
+
+. /lib/lsb/init-functions
+
+
+case "$1" in
+start)
+sleep 10
+
+echo ds1307 0x68 > /sys/class/i2c-adapter/i2c-1/new_device
+hwclock -s
+date
+
+
+start-stop-daemon -S -x /home/pi/hardware.py >>/var/log/hardware.log &
+_pb_id=$(pactl list sink-inputs short | grep protocol-native | awk '{print $1;}')
+pactl set-sink-input-volume $_pb_id 50%
+;;
+stop)
+start-stop-daemon -K -x /home/pi/hardware.py
+;;
+*)
+echo "Usage: /etc/init.d/hardware-agent {start|stop}"
+exit 1
+;;
+esac
+exit 0
