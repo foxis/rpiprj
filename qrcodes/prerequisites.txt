@@ -1,0 +1,7 @@
+image: raspbian stretch lite
+
+sudo apt-get install zbar-tools
+sudo apt-get install python-pip
+sudo apt-get python-sqlite
+
+pip install qrcode

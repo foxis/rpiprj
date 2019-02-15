@@ -1,0 +1,14 @@
+[[ -z "$1" ]] && { echo "Must provide number of codes to generate for ball A"; exit 1; }
+[[ -z "$2" ]] && { echo "Must provide number of codes to generate for ball B"; exit 1; }
+[[ -z "$3" ]] && { echo "Must provide number of codes to generate for ball C"; exit 1; }
+[[ -f mydata.sql ]] && rm mydata.sql
+[[ -f qr-codes.tar.gz ]] && rm qr-codes.tar.gz
+rm *.svg
+
+python generate.py $1 0
+python generate.py $2 1
+python generate.py $3 2
+
+tar -czf qr-codes.tar.gz *.svg
+rm *.svg
+

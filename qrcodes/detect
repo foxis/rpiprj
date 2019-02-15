@@ -1,0 +1,1 @@
+zbarcam --prescale=600x600 --nodisplay --raw -Sdisable -Sqrcode.enable | unbuffer -p /home/pi/detect.py >> /home/pi/dump.log
